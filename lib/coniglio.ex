@@ -12,9 +12,11 @@ defmodule Coniglio do
       :world
 
   """
-  def hello do
-    %RabbitClient{brokerUrl: "amqp://localhost:5672", timeout: 1000}
-    |> RabbitClient.connect()
-    |> RabbitClient.stop()
+  def test do
+    c =
+      %RabbitClient{brokerUrl: "amqp://localhost:5672", timeout: 1000}
+      |> RabbitClient.connect()
+
+    RabbitClient.listen(c, %{}, "world", exchange: "hello")
   end
 end

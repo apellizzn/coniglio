@@ -3,18 +3,6 @@ defmodule RabbitClient do
 
   defstruct [:brokerUrl, :connection, :channel, :timeout, consumers: []]
 
-  defmodule Receiver do
-    def wait_for_messages(client) do
-      receive do
-        {:basic_deliver, payload, meta} ->
-          Delivery.fromAmqpDelivery(meta, payload)
-          wait_for_messages(client)
-        {:EXIT, _from, _reason} ->
-
-      end
-    end
-  end
-
   @spec connect(RabbitClient.t()) :: RabbitClient.t() | :error
   def connect(client) do
     Logger.info("Connecting to broker...")
@@ -64,21 +52,8 @@ defmodule RabbitClient do
     )
   end
 
-  def listen(client, ctx, queue, auto_ack, exclusive, no_local, no_wait, args, handler) do
-    with {:ok, consumer_tag} <-
-           AMQP.Basic.consume(client.channel, queue,
-             no_local: no_local,
-             no_wait: no_wait,
-             arguments: args,
-             exclusive: exclusive,
-             no_ack: !auto_ack
-           ) do
-              %RabbitClient{client | consumers: [client.consumers | consumer_tag]}
-              |> Receiver.wait_for_messages()
-           else
-            error -> Logger.error(error)
-           end
-    end
+  def listen(client, ctx, queue, options) do
+    {:ok, _pid} = MessageProcessor.start_link(options ++ [client: client, queue: queue, ctx: ctx])
   end
 
   @spec doPublish(
@@ -113,5 +88,10 @@ defmodule RabbitClient do
 
         nil
     end
+  end
+
+  @spec add_consumer(RabbitClient.t(), any) :: RabbitClient.t()
+  def add_consumer(client, consumer) do
+    %RabbitClient{client | consumers: [client.consumers | consumer]}
   end
 end
