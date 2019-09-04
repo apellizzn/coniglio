@@ -1,21 +1,20 @@
-# Lapin
+# Coniglio
 
 **TODO: Add description**
 
 ## Installation
 
 If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `lapin` to your list of dependencies in `mix.exs`:
+by adding `coniglio` to your list of dependencies in `mix.exs`:
 
 ```elixir
 def deps do
   [
-    {:lapin, "~> 0.1.0"}
+    {:coniglio, "~> 0.1.0"}
   ]
 end
 ```
 
 Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
 and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at [https://hexdocs.pm/lapin](https://hexdocs.pm/lapin).
-
+be found at [https://hexdocs.pm/coniglio](https://hexdocs.pm/coniglio).

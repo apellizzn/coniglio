@@ -1,6 +1,6 @@
 defmodule Coniglio do
   @moduledoc """
-  Documentation for Lapin.
+  Documentation for Coniglio.
   """
 
   @doc """
