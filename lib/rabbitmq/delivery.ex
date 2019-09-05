@@ -6,8 +6,7 @@ defmodule Delivery do
       exchange: exchange,
       routing_key: routing_key,
       body: response.payload,
-      headers: response.headers,
-      reply_to: response.reply_to
+      headers: response.headers
     }
   end
 
@@ -16,8 +15,7 @@ defmodule Delivery do
       headers: meta.headers,
       body: payload,
       exchange: meta.exchange,
-      routing_key: meta.routing_key,
-      reply_to: meta.reply_to
+      routing_key: meta.routing_key
     }
   end
 end

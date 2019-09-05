@@ -27,14 +27,13 @@ defmodule RabbitClient do
   def stop(client) do
     Logger.info("Stopping RabbitMQ client...")
 
-    with :ok <- AMQP.Channel.close(client.channel),
-         :ok <-
+    with :ok <-
            AMQP.Connection.close(client.connection) do
       Logger.info("RabbitMQ client stopped")
       :ok
     else
-      {:error, _} ->
-        Logger.error("Connection teardown failed")
+      {:error, e} ->
+        Logger.error(e)
         :error
     end
   end
@@ -67,20 +66,21 @@ defmodule RabbitClient do
           String.t() | nil
         ) :: :ok | :error
   defp doPublish(client, exchange, routing_key, correlation_id, headers, body, reply_to) do
-    try do
-      AMQP.Basic.publish(client.channel, exchange, routing_key, body,
-        headers: headers,
-        persistent: true,
-        reply_to: if(reply_to, do: reply_to, else: :undefined),
-        timestamp: :os.system_time(:millisecond),
-        content_type: "application/vnd.google.protobuf"
-      )
+    IO.puts("publish to #{exchange}#{routing_key}")
 
+    with :ok <-
+           AMQP.Basic.publish(client.channel, exchange, routing_key, body,
+             headers: headers,
+             persistent: true,
+             reply_to: if(reply_to, do: reply_to, else: :undefined),
+             timestamp: :os.system_time(:millisecond),
+             content_type: "application/vnd.google.protobuf"
+           ) do
       :ok
-    catch
-      err ->
+    else
+      {:error, reason} ->
         Logger.error(%{
-          error: err,
+          error: reason,
           exchange: exchange,
           key: routing_key,
           body: body,

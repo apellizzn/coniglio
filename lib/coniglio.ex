@@ -16,7 +16,7 @@ defmodule Coniglio do
   """
 
   defp context do
-    %Context{correlation_id: "123", reply_to: "amq.rabbitmq.reply-to"}
+    %Context{correlation_id: "123"}
   end
 
   @spec consume(Delivery.t()) :: any
@@ -27,22 +27,22 @@ defmodule Coniglio do
   end
 
   def listen do
-    %RabbitClient{brokerUrl: "amqp://localhost:5672", timeout: 1000}
-    |> RabbitClient.connect()
-    |> RabbitClient.listen(context(), "world",
-      exchange: "hello",
-      handler: &consume/1
-    )
+    Service.new_service(name: "Receiver", timeout: 1000)
+    |> Service.add_listener("exhello", "toworld", &consume/1)
   end
 
   def publish do
-    %RabbitClient{brokerUrl: "amqp://localhost:5672", timeout: 1000}
-    |> RabbitClient.connect()
-    |> RabbitClient.cast(context(), %Delivery{
-      exchange: "hello",
-      routing_key: "world",
+    r =
+      %RabbitClient{brokerUrl: "amqp://localhost:5672", timeout: 1000}
+      |> RabbitClient.connect()
+
+    RabbitClient.cast(r, context(), %Delivery{
+      exchange: "exhello",
+      routing_key: "toworld",
       body: Message.encode(Message.new(name: "Albe")),
       headers: []
     })
+
+    RabbitClient.stop(r)
   end
 end

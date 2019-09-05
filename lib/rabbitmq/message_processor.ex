@@ -10,7 +10,6 @@ defmodule MessageProcessor do
   def init(opts) do
     client = opts[:client]
     chan = opts[:client].channel
-    setup_queue(opts)
 
     # Register the GenServer process as a consumer
     {:ok, consumer_tag} = Basic.consume(chan, opts[:queue])
@@ -45,13 +44,5 @@ defmodule MessageProcessor do
     end
 
     {:noreply, state}
-  end
-
-  defp setup_queue(opts) do
-    chan = opts[:client].channel
-    {:ok, _} = Queue.declare(chan, opts[:queue], durable: true)
-
-    :ok = Exchange.fanout(chan, opts[:exchange], durable: true)
-    :ok = Queue.bind(chan, opts[:queue], opts[:exchange])
   end
 end
