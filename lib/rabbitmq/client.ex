@@ -48,7 +48,7 @@ defmodule RabbitClient do
       ctx.correlation_id,
       request.headers,
       request.body,
-      ctx.replyTo
+      ctx.reply_to
     )
   end
 
