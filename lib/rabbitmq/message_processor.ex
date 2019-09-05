@@ -42,18 +42,8 @@ defmodule MessageProcessor do
     :ok = Queue.bind(chan, opts[:queue], opts[:exchange])
   end
 
-  defp consume(channel, tag, redelivered, payload) do
-    IO.inspect(payload)
-  rescue
-    # Requeue unless it's a redelivered message.
-    # This means we will retry consuming a message once in case of exception
-    # before we give up and have it moved to the error queue
-    #
-    # You might also want to catch :exit signal in production code.
-    # Make sure you call ack, nack or reject otherwise comsumer will stop
-    # receiving messages.
-    exception ->
-      :ok = Basic.reject(channel, tag, requeue: not redelivered)
-      IO.puts("Error converting #{payload} to integer")
+  defp consume(_, _, _, payload) do
+    Logger.info("Received a message")
+    IO.inspect(Message.decode(payload))
   end
 end

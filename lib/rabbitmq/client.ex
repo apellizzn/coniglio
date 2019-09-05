@@ -39,21 +39,22 @@ defmodule RabbitClient do
     end
   end
 
-  @spec cast(RabbitClient.t(), Context.t(), Delivery.t()) :: nil
+  @spec cast(RabbitClient.t(), Context.t(), Delivery.t()) :: :ok | :error
   def cast(client, ctx, request) do
     doPublish(
       client,
       request.exchange,
       request.routing_key,
-      ctx.correlationId,
+      ctx.correlation_id,
       request.headers,
       request.body,
       ctx.replyTo
     )
   end
 
+  @spec listen(RabbitClient.t(), Context.t(), String.t(), [any()]) :: {:ok, pid()}
   def listen(client, ctx, queue, options) do
-    {:ok, _pid} = MessageProcessor.start_link(options ++ [client: client, queue: queue, ctx: ctx])
+    {:ok, _} = MessageProcessor.start_link(options ++ [client: client, queue: queue, ctx: ctx])
   end
 
   @spec doPublish(
@@ -64,18 +65,18 @@ defmodule RabbitClient do
           any,
           String.t(),
           String.t() | nil
-        ) :: nil
-  defp doPublish(client, exchange, routing_key, correlationId, headers, body, reply_to) do
+        ) :: :ok | :error
+  defp doPublish(client, exchange, routing_key, correlation_id, headers, body, reply_to) do
     try do
       AMQP.Basic.publish(client.channel, exchange, routing_key, body,
         headers: headers,
         persistent: true,
         reply_to: if(reply_to, do: reply_to, else: :undefined),
-        timestamp: Time.utc_now(),
+        timestamp: :os.system_time(:millisecond),
         content_type: "application/vnd.google.protobuf"
       )
 
-      nil
+      :ok
     catch
       err ->
         Logger.error(%{
@@ -83,10 +84,10 @@ defmodule RabbitClient do
           exchange: exchange,
           key: routing_key,
           body: body,
-          correlationId: correlationId
+          correlation_id: correlation_id
         })
 
-        nil
+        :error
     end
   end
 
