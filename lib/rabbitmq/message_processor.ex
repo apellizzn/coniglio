@@ -34,15 +34,20 @@ defmodule MessageProcessor do
       ) do
     delivery = Delivery.fromAmqpDelivery(meta, payload)
     result = handler.(delivery)
+    Basic.ack(client.channel, meta[:delivery_tag])
 
-    if delivery.reply_to != :undefined do
-      RabbitClient.cast(
-        client,
-        %Context{correlation_id: "123"},
-        Delivery.fromResponse(exchange, delivery.reply_to, %{payload: result, headers: []})
-      )
-    end
-
+    reply(delivery.reply_to, client, exchange, result)
     {:noreply, state}
+  end
+
+  def reply(nil, _, _, _) do
+  end
+
+  def reply(queue, client, exchange, result) do
+    RabbitClient.cast(
+      client,
+      %Context{correlation_id: "123"},
+      Delivery.fromResponse(exchange, queue, %{payload: result, headers: []})
+    )
   end
 end

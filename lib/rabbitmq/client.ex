@@ -3,6 +3,8 @@ defmodule RabbitClient do
 
   defstruct [:brokerUrl, :connection, :channel, :timeout, consumers: []]
 
+  @direct_reply_to "amq.rabbitmq.reply-to"
+
   @spec connect(RabbitClient.t()) :: RabbitClient.t() | :error
   def connect(client) do
     Logger.info("Connecting to broker...")
@@ -49,6 +51,18 @@ defmodule RabbitClient do
       request.body,
       ctx.reply_to
     )
+  end
+
+  def call(client, ctx, request) do
+    consumer_id = UUID.uuid1()
+
+    {:ok, pid} =
+      MessageConsumer.start_link(
+        client: client,
+        queue: @direct_reply_to,
+        ctx: ctx,
+        consumer_tag: consumer_id
+      )
   end
 
   @spec listen(RabbitClient.t(), Context.t(), String.t(), [any()]) :: {:ok, pid()}
