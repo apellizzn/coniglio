@@ -5,7 +5,7 @@ defmodule RabbitClient do
 
   @direct_reply_to "amq.rabbitmq.reply-to"
 
-  @spec connect(RabbitClient.t()) :: RabbitClient.t() | :error
+  @spec connect(RabbitClient.t()) :: {:ok, RabbitClient.t()} | {:error, String.t()}
   def connect(client) do
     Logger.info("Connecting to broker...")
 
@@ -13,30 +13,29 @@ defmodule RabbitClient do
            AMQP.Connection.open([connection_timeout: client.timeout], client.brokerUrl),
          {:ok, chan} <- AMQP.Channel.open(conn) do
       Logger.info("Connection successful")
-      %RabbitClient{client | connection: conn, channel: chan}
+      {:ok, %RabbitClient{client | connection: conn, channel: chan}}
     else
       {:error, err} ->
         Logger.error(err)
-        :error
+        {:error, err}
 
       _ ->
         Logger.error("Unrecognized error")
-        :error
+        {:error, "Unrecognized error"}
     end
   end
 
-  @spec stop(RabbitClient.t()) :: :ok | :error
+  @spec stop(RabbitClient.t()) :: :ok | {:error, String.t()}
   def stop(client) do
     Logger.info("Stopping RabbitMQ client...")
 
-    with :ok <-
-           AMQP.Connection.close(client.connection) do
+    with :ok <- AMQP.Connection.close(client.connection) do
       Logger.info("RabbitMQ client stopped")
       :ok
     else
-      {:error, e} ->
-        Logger.error(e)
-        :error
+      {:error, err} ->
+        Logger.error(err)
+        {:error, err}
     end
   end
 
@@ -80,9 +79,10 @@ defmodule RabbitClient do
     end
   end
 
-  @spec listen(RabbitClient.t(), Context.t(), String.t(), [any()]) :: {:ok, pid()}
+  @spec listen(RabbitClient.t(), Context.t(), String.t(), [any()]) ::
+          {:ok, pid()} | {:error, binary()}
   def listen(client, ctx, queue, options) do
-    {:ok, _} = MessageProcessor.start_link(options ++ [client: client, queue: queue, ctx: ctx])
+    MessageProcessor.start_link(options ++ [client: client, queue: queue, ctx: ctx])
   end
 
   @spec doPublish(

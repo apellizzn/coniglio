@@ -8,6 +8,7 @@ defmodule Service do
           listeners: [String.t()] | []
         }
 
+  @spec new_service(Keyword.t()) :: Service.t()
   def new_service(opts) do
     %Service{
       name: opts[:name],
@@ -15,9 +16,14 @@ defmodule Service do
       rabbit:
         %RabbitClient{brokerUrl: "amqp://localhost:5672", timeout: opts[:timeout]}
         |> RabbitClient.connect()
+        |> elem(1)
     }
   end
 
+  @spec add_listener(Service.t(), String.t(), String.t(), any) ::
+          :ok
+          | {:error, any}
+          | {:ok, pid}
   def add_listener(service, exchange, topic, handler) do
     queue = "#{service.name}-#{exchange}-#{topic}"
     Logger.info("Creating handler for queue #{queue}")

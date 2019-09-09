@@ -12,6 +12,7 @@ defmodule MessageProcessor do
     chan = opts[:client].channel
 
     # Register the GenServer process as a consumer
+    IO.puts("consume #{opts[:queue]}")
     {:ok, consumer_tag} = Basic.consume(chan, opts[:queue])
     {:ok, {RabbitClient.add_consumer(client, consumer_tag), opts[:handler]}}
   end
@@ -49,6 +50,9 @@ defmodule MessageProcessor do
 
   @spec reply(Context.t(), RabbitClient.t(), any) :: nil
   def reply(%Context{reply_to: nil}, _, _) do
+  end
+
+  def reply(%Context{reply_to: :undefined}, _, _) do
   end
 
   def reply(ctx, client, result) do
