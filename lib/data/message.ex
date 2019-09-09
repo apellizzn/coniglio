@@ -8,5 +8,5 @@ defmodule Message do
   defstruct [:name, :last_name]
 
   field(:name, 1, type: :string)
-  field(:last_name, 1, type: :string)
+  field(:last_name, 2, type: :string)
 end

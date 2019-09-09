@@ -13,7 +13,7 @@ defmodule MessageProcessor do
 
     # Register the GenServer process as a consumer
     {:ok, consumer_tag} = Basic.consume(chan, opts[:queue])
-    {:ok, {RabbitClient.add_consumer(client, consumer_tag), opts[:exchange], opts[:handler]}}
+    {:ok, {RabbitClient.add_consumer(client, consumer_tag), opts[:handler]}}
   end
 
   # Confirmation sent by the broker after registering this process as a consumer
@@ -30,24 +30,32 @@ defmodule MessageProcessor do
 
   def handle_info(
         {:basic_deliver, payload, meta},
-        {client, exchange, handler} = state
+        {client, handler}
       ) do
-    delivery = Delivery.fromAmqpDelivery(meta, payload)
-    result = handler.(delivery)
-    Basic.ack(client.channel, meta[:delivery_tag])
+    try do
+      Basic.ack(client.channel, meta.delivery_tag)
 
-    reply(delivery.reply_to, client, exchange, result)
-    {:noreply, state}
+      result =
+        Delivery.fromAmqpDelivery(meta, payload)
+        |> handler.()
+
+      Context.fromAmqpMeta(meta) |> reply(client, result)
+
+      {:noreply, {client, handler}}
+    catch
+      _ -> AMQP.Basic.nack(client.channel, meta.delivery_tag)
+    end
   end
 
-  def reply(nil, _, _, _) do
+  @spec reply(Context.t(), RabbitClient.t(), any) :: nil
+  def reply(%Context{reply_to: nil}, _, _) do
   end
 
-  def reply(queue, client, exchange, result) do
+  def reply(ctx, client, result) do
     RabbitClient.cast(
       client,
-      %Context{correlation_id: "123"},
-      Delivery.fromResponse(exchange, queue, %{payload: result, headers: []})
+      %Context{ctx | reply_to: :undefined},
+      Delivery.fromResponse("", ctx.reply_to, %{payload: result, headers: []})
     )
   end
 end

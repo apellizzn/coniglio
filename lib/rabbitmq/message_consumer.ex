@@ -9,11 +9,15 @@ defmodule MessageConsumer do
 
   def init(opts) do
     client = opts[:client]
+    receiver = opts[:receiver]
 
     {:ok, _consumer_tag} =
-      AMQP.Basic.consume(client.channel, opts[:queue], nil, consumer_tag: opts[:consumer_tag])
+      AMQP.Basic.consume(client.channel, opts[:queue], nil,
+        consumer_tag: opts[:consumer_tag],
+        no_ack: true
+      )
 
-    {:ok, client}
+    {:ok, {client, receiver}}
   end
 
   # Confirmation sent by the broker after registering this process as a consumer
@@ -28,24 +32,14 @@ defmodule MessageConsumer do
     {:stop, :normal, state}
   end
 
-  # def handle_info(
-  #       {:basic_deliver, payload, meta},
-  #       client
-  #     ) do
-  #   delivery = Delivery.fromAmqpDelivery(meta, payload)
-  #   # result = handler.(delivery)
+  def handle_info(
+        {:basic_deliver, payload, meta},
+        {client, receiver}
+      ) do
+    delivery = Delivery.fromAmqpDelivery(meta, payload)
 
-  #   if delivery.reply_to != :undefined do
-  #     RabbitClient.cast(
-  #       client,
-  #       %Context{correlation_id: "123"},
-  #       Delivery.fromResponse(exchange, delivery.reply_to, %{
-  #         payload: Message.encode(result),
-  #         headers: []
-  #       })
-  #     )
-  #   end
+    send(receiver, {:ok, delivery})
 
-  #   {:noreply, client}
-  # end
+    {:noreply, {client, receiver}}
+  end
 end

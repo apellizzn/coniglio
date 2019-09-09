@@ -56,13 +56,28 @@ defmodule RabbitClient do
   def call(client, ctx, request) do
     consumer_id = UUID.uuid1()
 
-    {:ok, pid} =
+    {:ok, _pid} =
       MessageConsumer.start_link(
+        receiver: self(),
         client: client,
         queue: @direct_reply_to,
         ctx: ctx,
         consumer_tag: consumer_id
       )
+
+    doPublish(
+      client,
+      request.exchange,
+      request.routing_key,
+      ctx.correlation_id,
+      request.headers,
+      request.body,
+      @direct_reply_to
+    )
+
+    receive do
+      {:ok, deliver} -> deliver
+    end
   end
 
   @spec listen(RabbitClient.t(), Context.t(), String.t(), [any()]) :: {:ok, pid()}
@@ -107,6 +122,6 @@ defmodule RabbitClient do
 
   @spec add_consumer(RabbitClient.t(), any) :: RabbitClient.t()
   def add_consumer(client, consumer) do
-    %RabbitClient{client | consumers: [client.consumers | consumer]}
+    %RabbitClient{client | consumers: [consumer | client.consumers]}
   end
 end

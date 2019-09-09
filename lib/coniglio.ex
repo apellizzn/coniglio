@@ -21,17 +21,14 @@ defmodule Coniglio do
 
   @spec consume(Delivery.t()) :: any
   def consume(delivery) do
-    Logger.info("Received a message!")
-
     delivery.body
     |> Message.decode()
-    |> Map.merge(%{last_name: "Pelli"})
+    |> Map.merge(%{last_name: "Pell"})
+    |> Message.encode()
   end
 
   @spec log(Delivery.t()) :: any
   def log(delivery) do
-    Logger.info("Received a response")
-
     delivery.body
     |> Message.decode()
     |> IO.inspect()
@@ -43,8 +40,6 @@ defmodule Coniglio do
   end
 
   def dialog do
-    listen()
-
     %RabbitClient{brokerUrl: "amqp://localhost:5672", timeout: 1000}
     |> RabbitClient.connect()
     |> RabbitClient.call(context(), %Delivery{
@@ -53,6 +48,7 @@ defmodule Coniglio do
       body: Message.encode(Message.new(name: "Albe")),
       headers: []
     })
+    |> log
   end
 
   def publish do
