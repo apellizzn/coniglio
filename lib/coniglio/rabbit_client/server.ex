@@ -1,6 +1,7 @@
-defmodule MessageProcessor do
+defmodule Coniglio.RabbitClient.Server do
   use GenServer
   use AMQP
+  use Coniglio
   require Logger
 
   def start_link(opts) do
@@ -38,7 +39,7 @@ defmodule MessageProcessor do
 
       result =
         Delivery.fromAmqpDelivery(meta, payload)
-        |> handler.()
+        |> handler.handle()
 
       Context.fromAmqpMeta(meta) |> reply(client, result)
 

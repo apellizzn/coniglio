@@ -1,6 +1,7 @@
-defmodule Service do
+defmodule Coniglio.Service do
   defstruct [:name, :rabbit, :timeout, listeners: []]
   require Logger
+  use Coniglio
 
   @type t() :: %__MODULE__{
           name: String.t(),
@@ -20,7 +21,7 @@ defmodule Service do
     }
   end
 
-  @spec add_listener(Service.t(), String.t(), String.t(), any) ::
+  @spec add_listener(Service.t(), String.t(), String.t(), MessageHandler.t()) ::
           :ok
           | {:error, any}
           | {:ok, pid}

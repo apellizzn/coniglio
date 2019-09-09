@@ -1,6 +1,7 @@
-defmodule MessageConsumer do
+defmodule Coniglio.RabbitClient.DirectReceiver do
   use GenServer
   use AMQP
+  use Coniglio
   require Logger
 
   def start_link(opts) do
@@ -36,7 +37,7 @@ defmodule MessageConsumer do
         {:basic_deliver, payload, meta},
         {client, receiver}
       ) do
-    delivery = Delivery.fromAmqpDelivery(meta, payload)
+    delivery = RabbitClient.Delivery.fromAmqpDelivery(meta, payload)
 
     send(receiver, {:ok, delivery})
 

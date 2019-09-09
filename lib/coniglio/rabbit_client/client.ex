@@ -1,35 +1,37 @@
-defmodule RabbitClient do
+defmodule Coniglio.RabbitClient do
   require Logger
+  @amqp Application.get_env(:coniglio, Amqp)
 
   defstruct [:brokerUrl, :connection, :channel, :timeout, consumers: []]
 
   @direct_reply_to "amq.rabbitmq.reply-to"
 
-  @spec connect(RabbitClient.t()) :: {:ok, RabbitClient.t()} | {:error, String.t()}
+  @spec connect(Coniglio.RabbitClient.t()) ::
+          {:ok, Coniglio.RabbitClient.t()} | {:error, String.t()}
   def connect(client) do
     Logger.info("Connecting to broker...")
 
     with {:ok, conn} <-
-           AMQP.Connection.open([connection_timeout: client.timeout], client.brokerUrl),
-         {:ok, chan} <- AMQP.Channel.open(conn) do
+           @amqp[:connection].open([connection_timeout: client.timeout], client.brokerUrl),
+         {:ok, chan} <- @amqp[:channel].open(conn) do
       Logger.info("Connection successful")
-      {:ok, %RabbitClient{client | connection: conn, channel: chan}}
+      {:ok, %Coniglio.RabbitClient{client | connection: conn, channel: chan}}
     else
       {:error, err} ->
         Logger.error(err)
         {:error, err}
 
-      _ ->
-        Logger.error("Unrecognized error")
-        {:error, "Unrecognized error"}
+      err ->
+        Logger.error(err)
+        {:error, err}
     end
   end
 
-  @spec stop(RabbitClient.t()) :: :ok | {:error, String.t()}
+  @spec stop(Coniglio.RabbitClient.t()) :: :ok | {:error, String.t()}
   def stop(client) do
     Logger.info("Stopping RabbitMQ client...")
 
-    with :ok <- AMQP.Connection.close(client.connection) do
+    with :ok <- @amqp[:connection].close(client.connection) do
       Logger.info("RabbitMQ client stopped")
       :ok
     else
@@ -39,7 +41,8 @@ defmodule RabbitClient do
     end
   end
 
-  @spec cast(RabbitClient.t(), Context.t(), Delivery.t()) :: :ok | :error
+  @spec cast(Coniglio.RabbitClient.t(), Coniglio.Context.t(), Coniglio.RabbitClient.Delivery.t()) ::
+          :ok | :error
   def cast(client, ctx, request) do
     doPublish(
       client,
@@ -56,7 +59,7 @@ defmodule RabbitClient do
     consumer_id = UUID.uuid1()
 
     {:ok, _pid} =
-      MessageConsumer.start_link(
+      Coniglio.RabbitClient.DirectReceiver.start_link(
         receiver: self(),
         client: client,
         queue: @direct_reply_to,
@@ -79,14 +82,14 @@ defmodule RabbitClient do
     end
   end
 
-  @spec listen(RabbitClient.t(), Context.t(), String.t(), [any()]) ::
+  @spec listen(Coniglio.RabbitClient.t(), Coniglio.Context.t(), String.t(), [any()]) ::
           {:ok, pid()} | {:error, binary()}
   def listen(client, ctx, queue, options) do
-    MessageProcessor.start_link(options ++ [client: client, queue: queue, ctx: ctx])
+    Coniglio.RabbitClient.Server.start_link(options ++ [client: client, queue: queue, ctx: ctx])
   end
 
   @spec doPublish(
-          RabbitClient.t(),
+          Coniglio.RabbitClient.t(),
           String.t(),
           String.t(),
           String.t(),
@@ -120,8 +123,8 @@ defmodule RabbitClient do
     end
   end
 
-  @spec add_consumer(RabbitClient.t(), any) :: RabbitClient.t()
+  @spec add_consumer(Coniglio.RabbitClient.t(), any) :: Coniglio.RabbitClient.t()
   def add_consumer(client, consumer) do
-    %RabbitClient{client | consumers: [consumer | client.consumers]}
+    %Coniglio.RabbitClient{client | consumers: [consumer | client.consumers]}
   end
 end
