@@ -1,4 +1,7 @@
 defmodule Coniglio.RabbitClient.DirectReceiver do
+  @moduledoc """
+    Coniglio.RabbitClient.DirectReceiver
+  """
   use GenServer
   use AMQP
   use Coniglio
@@ -37,7 +40,7 @@ defmodule Coniglio.RabbitClient.DirectReceiver do
         {:basic_deliver, payload, meta},
         {client, receiver}
       ) do
-    delivery = RabbitClient.Delivery.fromAmqpDelivery(meta, payload)
+    delivery = RabbitClient.Delivery.from_amqp_delivery(meta, payload)
 
     send(receiver, {:ok, delivery})
 

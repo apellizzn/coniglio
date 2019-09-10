@@ -23,7 +23,7 @@ defmodule Main do
   def log(delivery) do
     delivery.body
     |> Message.decode()
-    |> IO.inspect()
+    |> Logger.info
   end
 
   def listen do
@@ -33,7 +33,7 @@ defmodule Main do
 
   def dialog do
     {:ok, client} =
-      %Coniglio.RabbitClient{brokerUrl: "amqp://localhost:5672", timeout: 1000}
+      %Coniglio.RabbitClient{broker_url: "amqp://localhost:5672", timeout: 1000}
       |> Coniglio.RabbitClient.connect()
 
     RabbitClient.call(client, context(), %Delivery{
@@ -47,7 +47,7 @@ defmodule Main do
 
   def publish do
     {:ok, client} =
-      %Coniglio.RabbitClient{brokerUrl: "amqp://localhost:5672", timeout: 1000}
+      %Coniglio.RabbitClient{broker_url: "amqp://localhost:5672", timeout: 1000}
       |> Coniglio.RabbitClient.connect()
 
     Coniglio.RabbitClient.cast(client, context(), %Delivery{

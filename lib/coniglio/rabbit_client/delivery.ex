@@ -1,7 +1,11 @@
 defmodule Coniglio.RabbitClient.Delivery do
+  @moduledoc """
+    Coniglio.RabbitClient.Delivery
+  """
+
   defstruct [:headers, :body, :exchange, :routing_key, :reply_to]
 
-  def fromResponse(exchange, routing_key, response) do
+  def from_response(exchange, routing_key, response) do
     %Coniglio.RabbitClient.Delivery{
       exchange: exchange,
       routing_key: routing_key,
@@ -10,7 +14,7 @@ defmodule Coniglio.RabbitClient.Delivery do
     }
   end
 
-  def fromAmqpDelivery(meta, payload) do
+  def from_amqp_delivery(meta, payload) do
     %Coniglio.RabbitClient.Delivery{
       headers: meta.headers,
       body: payload,

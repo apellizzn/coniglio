@@ -1,4 +1,7 @@
 defmodule Coniglio do
+  @moduledoc """
+    Coniglio
+  """
   defmacro __using__(_opts) do
     quote do
       alias Coniglio.Context

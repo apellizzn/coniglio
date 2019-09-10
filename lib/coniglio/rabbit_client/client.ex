@@ -1,19 +1,23 @@
 defmodule Coniglio.RabbitClient do
+  @moduledoc """
+    Coniglio.RabbitClient
+  """
+  @behaviour Coniglio.Contracts.Client
   require Logger
-  @amqp Application.get_env(:coniglio, Amqp)
 
-  defstruct [:brokerUrl, :connection, :channel, :timeout, consumers: []]
+  defstruct [:broker_url, :connection, :channel, :timeout, consumers: []]
 
   @direct_reply_to "amq.rabbitmq.reply-to"
+  def new_client(broker_url, timeout) do
+    %Coniglio.RabbitClient{broker_url: broker_url, timeout: timeout}
+  end
 
-  @spec connect(Coniglio.RabbitClient.t()) ::
-          {:ok, Coniglio.RabbitClient.t()} | {:error, String.t()}
   def connect(client) do
     Logger.info("Connecting to broker...")
 
     with {:ok, conn} <-
-           @amqp[:connection].open([connection_timeout: client.timeout], client.brokerUrl),
-         {:ok, chan} <- @amqp[:channel].open(conn) do
+           AMQP.Connection.open([connection_timeout: client.timeout], client.broker_url),
+         {:ok, chan} <- AMQP.Channel.open(conn) do
       Logger.info("Connection successful")
       {:ok, %Coniglio.RabbitClient{client | connection: conn, channel: chan}}
     else
@@ -27,24 +31,21 @@ defmodule Coniglio.RabbitClient do
     end
   end
 
-  @spec stop(Coniglio.RabbitClient.t()) :: :ok | {:error, String.t()}
   def stop(client) do
     Logger.info("Stopping RabbitMQ client...")
 
-    with :ok <- @amqp[:connection].close(client.connection) do
-      Logger.info("RabbitMQ client stopped")
-      :ok
-    else
+    case AMQP.Connection.close(client.connection) do
+      :ok ->
+        Logger.info("RabbitMQ client stopped")
+        :ok
       {:error, err} ->
         Logger.error(err)
         {:error, err}
     end
   end
 
-  @spec cast(Coniglio.RabbitClient.t(), Coniglio.Context.t(), Coniglio.RabbitClient.Delivery.t()) ::
-          :ok | :error
   def cast(client, ctx, request) do
-    doPublish(
+    do_publish(
       client,
       request.exchange,
       request.routing_key,
@@ -55,6 +56,24 @@ defmodule Coniglio.RabbitClient do
     )
   end
 
+  def bind_exchange(channel, prefix, exchange, topic) do
+    queue = "#{prefix}-#{exchange}-#{topic}"
+    Logger.info("Creating handler for queue #{queue}")
+
+    with :ok <- AMQP.Exchange.topic(channel, exchange),
+         {:ok, _} <- AMQP.Queue.declare(channel, queue, durable: false),
+         :ok <- AMQP.Queue.bind(channel, queue, exchange, routing_key: topic) do
+      {:ok, queue}
+    else
+      _ -> {:error, "Could not create the queue #{queue}"}
+    end
+  end
+
+  @spec call(
+          atom | %{channel: AMQP.Channel.t()},
+          atom | %{correlation_id: binary},
+          atom | %{body: binary, exchange: binary, headers: any, routing_key: binary}
+        ) :: any
   def call(client, ctx, request) do
     consumer_id = UUID.uuid1()
 
@@ -67,7 +86,7 @@ defmodule Coniglio.RabbitClient do
         consumer_tag: consumer_id
       )
 
-    doPublish(
+    do_publish(
       client,
       request.exchange,
       request.routing_key,
@@ -82,13 +101,11 @@ defmodule Coniglio.RabbitClient do
     end
   end
 
-  @spec listen(Coniglio.RabbitClient.t(), Coniglio.Context.t(), String.t(), [any()]) ::
-          {:ok, pid()} | {:error, binary()}
   def listen(client, ctx, queue, options) do
     Coniglio.RabbitClient.Server.start_link(options ++ [client: client, queue: queue, ctx: ctx])
   end
 
-  @spec doPublish(
+  @spec do_publish(
           Coniglio.RabbitClient.t(),
           String.t(),
           String.t(),
@@ -97,20 +114,18 @@ defmodule Coniglio.RabbitClient do
           String.t(),
           String.t() | nil
         ) :: :ok | :error
-  defp doPublish(client, exchange, routing_key, correlation_id, headers, body, reply_to) do
+  defp do_publish(client, exchange, routing_key, correlation_id, headers, body, reply_to) do
     IO.puts("publish to #{exchange}#{routing_key}")
 
-    with :ok <-
-           AMQP.Basic.publish(client.channel, exchange, routing_key, body,
+    case AMQP.Basic.publish(client.channel, exchange, routing_key, body,
              headers: headers,
              persistent: true,
              reply_to: if(reply_to, do: reply_to, else: :undefined),
              timestamp: :os.system_time(:millisecond),
              content_type: "application/vnd.google.protobuf"
            ) do
-      :ok
-    else
-      {:error, reason} ->
+      :ok -> :ok
+     {:error, reason} ->
         Logger.error(%{
           error: reason,
           exchange: exchange,
@@ -118,12 +133,10 @@ defmodule Coniglio.RabbitClient do
           body: body,
           correlation_id: correlation_id
         })
-
         :error
     end
   end
 
-  @spec add_consumer(Coniglio.RabbitClient.t(), any) :: Coniglio.RabbitClient.t()
   def add_consumer(client, consumer) do
     %Coniglio.RabbitClient{client | consumers: [consumer | client.consumers]}
   end

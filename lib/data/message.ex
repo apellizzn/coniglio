@@ -1,4 +1,7 @@
 defmodule Message do
+  @moduledoc """
+    Message
+  """
   use Protobuf, syntax: :proto3
 
   @type t :: %__MODULE__{

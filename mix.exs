@@ -8,8 +8,7 @@ defmodule Coniglio.MixProject do
       elixir: "~> 1.9",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
-      elixirc_paths: elixirc_paths(Mix.env()),
-      elixirc_paths: ["lib"]
+      elixirc_paths: elixirc_paths(Mix.env())
     ]
   end
 
@@ -33,7 +32,8 @@ defmodule Coniglio.MixProject do
     [
       {:amqp, "~> 1.2"},
       {:protobuf, "~> 0.5.3"},
-      {:uuid, "~> 1.1"}
+      {:uuid, "~> 1.1"},
+      {:credo, "~> 1.1.0", only: [:dev, :test], runtime: false}
       # {:dep_from_hexpm, "~> 0.3.0"},
       # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"}
     ]

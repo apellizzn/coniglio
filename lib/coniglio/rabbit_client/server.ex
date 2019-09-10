@@ -1,4 +1,8 @@
 defmodule Coniglio.RabbitClient.Server do
+  @moduledoc """
+    Coniglio.RabbitClient.Server
+  """
+
   use GenServer
   use AMQP
   use Coniglio
@@ -38,10 +42,10 @@ defmodule Coniglio.RabbitClient.Server do
       Basic.ack(client.channel, meta.delivery_tag)
 
       result =
-        Delivery.fromAmqpDelivery(meta, payload)
+        Delivery.from_amqp_delivery(meta, payload)
         |> handler.handle()
 
-      Context.fromAmqpMeta(meta) |> reply(client, result)
+      Context.from_amqp_meta(meta) |> reply(client, result)
 
       {:noreply, {client, handler}}
     catch
@@ -60,7 +64,7 @@ defmodule Coniglio.RabbitClient.Server do
     RabbitClient.cast(
       client,
       %Context{ctx | reply_to: :undefined},
-      Delivery.fromResponse("", ctx.reply_to, %{payload: result, headers: []})
+      Delivery.from_response("", ctx.reply_to, %{payload: result, headers: []})
     )
   end
 end
