@@ -19,7 +19,7 @@ defmodule Coniglio.RabbitClient do
            AMQP.Connection.open([connection_timeout: client.timeout], client.broker_url),
          {:ok, chan} <- AMQP.Channel.open(conn) do
       Logger.info("Connection successful")
-      {:ok, %Coniglio.RabbitClient{client | connection: conn, channel: chan}}
+      %Coniglio.RabbitClient{client | connection: conn, channel: chan}
     else
       {:error, err} ->
         Logger.error(err)
@@ -102,7 +102,7 @@ defmodule Coniglio.RabbitClient do
   end
 
   def listen(client, ctx, queue, options) do
-    Coniglio.RabbitClient.Server.start_link(options ++ [client: client, queue: queue, ctx: ctx])
+    #Coniglio.RabbitClient.Server.start_link(options ++ [client: client, queue: queue, ctx: ctx])
   end
 
   @spec do_publish(

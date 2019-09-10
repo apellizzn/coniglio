@@ -2,6 +2,15 @@ defmodule Main do
   require Logger
   use Coniglio
 
+
+  def try do
+    Coniglio.Service.start_link([
+      listeners: [SayHi],
+      broker_url: "amqp://localhost:5672",
+      timeout: 1000
+    ])
+  end
+
   defmodule Consume do
     @behaviour Coniglio.RabbitClient.MessageHandler
 
@@ -46,17 +55,16 @@ defmodule Main do
   end
 
   def publish do
-    {:ok, client} =
-      %Coniglio.RabbitClient{broker_url: "amqp://localhost:5672", timeout: 1000}
+      client = %Coniglio.RabbitClient{broker_url: "amqp://localhost:5672", timeout: 1000}
       |> Coniglio.RabbitClient.connect()
 
-    Coniglio.RabbitClient.cast(client, context(), %Delivery{
-      exchange: "exhello",
-      routing_key: "toworld",
-      body: Message.encode(Message.new(name: "Albe")),
-      headers: []
-    })
-
-    Coniglio.RabbitClient.stop(client)
+      client
+      |> Coniglio.RabbitClient.cast(context(), %Delivery{
+        exchange: "say_hi_exchange",
+        routing_key: "say_hi_topic",
+        body: Message.encode(Message.new(name: "Albe")),
+        headers: []
+      })
+      Coniglio.RabbitClient.stop(client)
   end
 end

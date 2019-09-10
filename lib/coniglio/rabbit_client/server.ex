@@ -1,7 +1,6 @@
-defmodule Coniglio.RabbitClient.Server do
-  @moduledoc """
-    Coniglio.RabbitClient.Server
-  """
+defmodule Server do
+  @behaviour Coniglio.Listener
+  @client Application.get_env(:coniglio, :client)
 
   use GenServer
   use AMQP
@@ -12,14 +11,14 @@ defmodule Coniglio.RabbitClient.Server do
     GenServer.start_link(__MODULE__, opts, [])
   end
 
-  def init(opts) do
-    client = opts[:client]
-    chan = opts[:client].channel
-
-    # Register the GenServer process as a consumer
-    IO.puts("consume #{opts[:queue]}")
-    {:ok, consumer_tag} = Basic.consume(chan, opts[:queue])
-    {:ok, {RabbitClient.add_consumer(client, consumer_tag), opts[:handler]}}
+  def init(listener) do
+    IO.puts("Server started")
+    client = Coniglio.Service.Data.client()
+    chan = client.channel
+    queue = "#{listener.exchange()}-#{listener.topic()}"
+    {:ok, queue} = @client.bind_exchange(client.channel, "", listener.exchange(), listener.topic())
+    {:ok, _consumer_tag} = Basic.consume(chan, queue)
+    {:ok, listener}
   end
 
   # Confirmation sent by the broker after registering this process as a consumer
@@ -36,18 +35,19 @@ defmodule Coniglio.RabbitClient.Server do
 
   def handle_info(
         {:basic_deliver, payload, meta},
-        {client, handler}
+        listener
       ) do
+        client = Coniglio.Service.Data.client()
     try do
       Basic.ack(client.channel, meta.delivery_tag)
 
       result =
         Delivery.from_amqp_delivery(meta, payload)
-        |> handler.handle()
+        |> listener.handle()
 
       Context.from_amqp_meta(meta) |> reply(client, result)
 
-      {:noreply, {client, handler}}
+      {:noreply, listener}
     catch
       _ -> AMQP.Basic.nack(client.channel, meta.delivery_tag)
     end
@@ -61,6 +61,7 @@ defmodule Coniglio.RabbitClient.Server do
   end
 
   def reply(ctx, client, result) do
+    client = Coniglio.Service.Data.client()
     RabbitClient.cast(
       client,
       %Context{ctx | reply_to: :undefined},
