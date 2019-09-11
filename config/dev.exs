@@ -1,3 +1,3 @@
 use Mix.Config
 
-config(:coniglio, :client, Coniglio.RabbitClient)
+config(:coniglio, :client, Coniglio.RabbitClient.RealClient)

@@ -12,24 +12,20 @@ defmodule Server do
   end
 
   def init(listener) do
-    IO.puts("Server started")
-    client = Coniglio.Service.Data.client()
-    chan = client.channel
-    queue = "#{listener.exchange()}-#{listener.topic()}"
-    {:ok, queue} = @client.bind_exchange(client.channel, "", listener.exchange(), listener.topic())
-    {:ok, _consumer_tag} = Basic.consume(chan, queue)
+    client = @client.get()
+    queue = @client.bind_exchange("", listener.exchange(), listener.topic())
+    {:ok, _consumer_tag} = Basic.consume(client.channel, queue)
     {:ok, listener}
   end
 
   # Confirmation sent by the broker after registering this process as a consumer
   def handle_info({:basic_consume_ok, %{consumer_tag: consumer_tag}}, state) do
-    Logger.info("Conusumer #{consumer_tag} registered")
+    Logger.info("Server #{consumer_tag} registered")
     {:noreply, state}
   end
 
   # Sent by the broker when the consumer is unexpectedly cancelled (such as after a queue deletion)
-  def handle_info({:basic_cancel, %{consumer_tag: consumer_tag}}, state) do
-    Logger.info("Consumer #{consumer_tag} cancelled")
+  def handle_info({:basic_cancel, _}, state) do
     {:stop, :normal, state}
   end
 
@@ -37,7 +33,8 @@ defmodule Server do
         {:basic_deliver, payload, meta},
         listener
       ) do
-        client = Coniglio.Service.Data.client()
+    client = @client.get()
+
     try do
       Basic.ack(client.channel, meta.delivery_tag)
 
@@ -45,7 +42,7 @@ defmodule Server do
         Delivery.from_amqp_delivery(meta, payload)
         |> listener.handle()
 
-      Context.from_amqp_meta(meta) |> reply(client, result)
+      Context.from_amqp_meta(meta) |> reply(result)
 
       {:noreply, listener}
     catch
@@ -53,17 +50,17 @@ defmodule Server do
     end
   end
 
-  @spec reply(Context.t(), RabbitClient.t(), any) :: nil
-  def reply(%Context{reply_to: nil}, _, _) do
+  @spec reply(Context.t(), any) :: nil
+  def reply(%Context{reply_to: nil}, _) do
   end
 
-  def reply(%Context{reply_to: :undefined}, _, _) do
+  def reply(%Context{reply_to: :undefined}, _) do
   end
 
-  def reply(ctx, client, result) do
-    client = Coniglio.Service.Data.client()
-    RabbitClient.cast(
-      client,
+  def reply(ctx, result) do
+    Logger.info("Publish response to #{ctx.reply_to}")
+
+    @client.publish(
       %Context{ctx | reply_to: :undefined},
       Delivery.from_response("", ctx.reply_to, %{payload: result, headers: []})
     )

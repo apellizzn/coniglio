@@ -2,6 +2,7 @@ defmodule Coniglio.RabbitClient.DirectReceiver do
   @moduledoc """
     Coniglio.RabbitClient.DirectReceiver
   """
+
   use GenServer
   use AMQP
   use Coniglio
@@ -12,21 +13,21 @@ defmodule Coniglio.RabbitClient.DirectReceiver do
   end
 
   def init(opts) do
-    client = opts[:client]
+    channel = opts[:channel]
     receiver = opts[:receiver]
 
     {:ok, _consumer_tag} =
-      AMQP.Basic.consume(client.channel, opts[:queue], nil,
+      AMQP.Basic.consume(channel, opts[:queue], nil,
         consumer_tag: opts[:consumer_tag],
         no_ack: true
       )
 
-    {:ok, {client, receiver}}
+    {:ok, {channel, receiver}}
   end
 
   # Confirmation sent by the broker after registering this process as a consumer
   def handle_info({:basic_consume_ok, %{consumer_tag: consumer_tag}}, state) do
-    Logger.info("Conusumer #{consumer_tag} registered")
+    Logger.info("Direct receiver #{consumer_tag} registered")
     {:noreply, state}
   end
 
@@ -38,12 +39,12 @@ defmodule Coniglio.RabbitClient.DirectReceiver do
 
   def handle_info(
         {:basic_deliver, payload, meta},
-        {client, receiver}
+        {channel, receiver}
       ) do
     delivery = RabbitClient.Delivery.from_amqp_delivery(meta, payload)
 
-    send(receiver, {:ok, delivery})
+    GenServer.reply(receiver, delivery)
 
-    {:noreply, {client, receiver}}
+    {:noreply, {channel, receiver}}
   end
 end
