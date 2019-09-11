@@ -1,32 +1,30 @@
 defmodule FakeClient do
-  @behaviour Coniglio.Contracts.Client
+  use Coniglio.RabbitClient.Client
+
   defstruct [:broker_url, :connection, :channel, :timeout, consumers: []]
 
-  def new_client(broker_url, timeout) do
-    %FakeClient{broker_url: broker_url, timeout: timeout}
+  def init(opts) do
+    {:ok, %FakeClient{broker_url: opts[:broker_url], timeout: opts[:timeout]}}
   end
 
-  def connect(client) do
-    {:ok, %FakeClient{client | connection: "connected"}}
+  def handle_call({:bind_exchange, prefix, exchange, topic}, _from, client) do
+    {:reply, "#{prefix}-#{exchange}-#{topic}", client}
   end
 
-  def stop(_client) do
+  def handle_call(:get_client, _from, client) do
+    {:reply, client, client}
   end
 
-  def cast(_arg0, _arg1, _arg2) do
+  def handle_call({:register_consumer, _queue}, _from, client) do
+    {:reply, {:ok, "consumer-tag"},
+     %FakeClient{client | consumers: ["consumer-tag" | client.consumers]}}
   end
 
-  def call(_arg0, _arg1, _arg2) do
+  def handle_call({:request, _ctx, request}, _from, client) do
+    {:reply, request.body, client}
   end
 
-  def add_consumer(_arg0, _arg1) do
-  end
-
-  def bind_exchange(_channel, prefix, exchange, topic) do
-    {:ok, "#{prefix}-#{exchange}-#{topic}"}
-  end
-
-  def listen(_client, _ctx, _queue, _options) do
-    {:ok, self()}
+  def handle_cast({:publish, _ctx, _request}, client) do
+    {:noreply, client}
   end
 end

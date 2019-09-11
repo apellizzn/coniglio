@@ -1,15 +1,10 @@
 defmodule Coniglio.RabbitClient.RealClient do
-  use GenServer
+  use Coniglio.RabbitClient.Client
   require Logger
 
-  @behaviour Coniglio.RabbitClient.Client
   @direct_reply_to "amq.rabbitmq.reply-to"
 
   defstruct [:broker_url, :connection, :channel, :timeout, consumers: []]
-
-  def start_link(opts) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
 
   def init(opts) do
     Logger.info("Connecting to broker...")
@@ -31,32 +26,12 @@ defmodule Coniglio.RabbitClient.RealClient do
     else
       {:error, err} ->
         Logger.error(err)
-        throw(err)
+        {:stop, err}
 
       err ->
         Logger.error(err)
-        throw(err)
+        {:stop, err}
     end
-  end
-
-  def publish(ctx, request) do
-    GenServer.cast(__MODULE__, {:publish, ctx, request})
-  end
-
-  def get do
-    GenServer.call(__MODULE__, :get_client)
-  end
-
-  def request(ctx, request) do
-    GenServer.call(__MODULE__, {:request, ctx, request})
-  end
-
-  def bind_exchange(prefix, exchange, topic) do
-    GenServer.call(__MODULE__, {:bind_exchange, prefix, exchange, topic})
-  end
-
-  def stop() do
-    GenServer.cast(__MODULE__, :stop)
   end
 
   def handle_call({:bind_exchange, prefix, exchange, topic}, _from, client) do
@@ -74,6 +49,23 @@ defmodule Coniglio.RabbitClient.RealClient do
 
   def handle_call(:get_client, _from, client) do
     {:reply, client, client}
+  end
+
+  def handle_call({:register_consumer, queue}, {from, _ref}, client) do
+    case AMQP.Basic.consume(client.channel, queue, from) do
+      {:ok, consumer_tag} ->
+        {
+          :reply,
+          {:ok, consumer_tag},
+          %Coniglio.RabbitClient.RealClient{
+            client
+            | consumers: [consumer_tag | client.consumers]
+          }
+        }
+
+      {:error, reason} ->
+        {:stop, reason}
+    end
   end
 
   def handle_call({:request, ctx, request}, from, client) do

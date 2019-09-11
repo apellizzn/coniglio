@@ -2,37 +2,24 @@ defmodule Coniglio.ServiceTest do
   use ExUnit.Case, async: true
 
   defmodule Consume do
-    @behaviour Coniglio.RabbitClient.MessageHandler
+    @behaviour Coniglio.Listener
     def handle(delivery) do
       delivery
     end
-  end
 
-  describe "new_service" do
-    test "returns a connected client" do
-      service = Coniglio.Service.new_service(name: "foo", timeout: 1000)
+    def exchange() do
+      "test-exchange"
+    end
 
-      assert %{name: "foo", timeout: 1000, listeners: []} = service
+    def topic() do
+      "test-topic"
     end
   end
 
-  describe "start" do
-    test "connect the client and start the listeners" do
-      service = Coniglio.Service.new_service(name: "foo", timeout: 1000)
-               |> Coniglio.Service.add_listener("exchange", "topic", Consume)
-               |> Coniglio.Service.start()
-      assert %{rabbit: %FakeClient{connection: "connected"}, listeners: [ok: _] } = service
-    end
-  end
-
-  describe "add_listener" do
-    test "add a listener" do
-      %Coniglio.Service{ listeners: listeners } =
-               Coniglio.Service.new_service(name: "foo", timeout: 1000)
-               |> Coniglio.Service.start()
-               |> Coniglio.Service.add_listener("exchange", "topic", Consume)
-               |> Coniglio.Service.add_listener("exchange2", "topic2", Consume)
-      assert Enum.count(listeners) == 2
+  describe "init" do
+    test "start the service" do
+      assert {:ok, pid} =
+               Coniglio.Service.start_link(broker_url: "foo", timeout: 1000, listeners: [Consume])
     end
   end
 end

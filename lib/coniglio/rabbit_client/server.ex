@@ -12,10 +12,15 @@ defmodule Server do
   end
 
   def init(listener) do
-    client = @client.get()
     queue = @client.bind_exchange("", listener.exchange(), listener.topic())
-    {:ok, _consumer_tag} = Basic.consume(client.channel, queue)
-    {:ok, listener}
+
+    case @client.register_consumer(queue) do
+      {:ok, _} ->
+        {:ok, listener}
+
+      {:error, reason} ->
+        {:stop, reason}
+    end
   end
 
   # Confirmation sent by the broker after registering this process as a consumer
