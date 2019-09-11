@@ -10,7 +10,12 @@ defmodule Coniglio.Service do
     Supervisor.init(
       [
         {@client, [broker_url: opts[:broker_url], timeout: opts[:timeout]]}
-        | Enum.map(opts[:listeners], fn listener -> {Server, listener} end)
+        | Enum.map(opts[:listeners], fn listener ->
+            %{
+              id: listener,
+              start: {Server, :start_link, [listener]}
+            }
+          end)
       ],
       strategy: :one_for_one
     )

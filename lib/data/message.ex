@@ -6,10 +6,12 @@ defmodule Message do
 
   @type t :: %__MODULE__{
           name: String.t(),
-          last_name: String.t()
+          last_name: String.t(),
+          age: Integer.t() | nil
         }
-  defstruct [:name, :last_name]
+  defstruct [:name, :last_name, :age]
 
   field(:name, 1, type: :string)
   field(:last_name, 2, type: :string)
+  field(:age, 3, type: :int32)
 end
