@@ -16,7 +16,7 @@ defmodule Coniglio.RabbitClient.DirectReceiver do
     channel = opts[:channel]
     receiver = opts[:receiver]
 
-    {:ok, _consumer_tag} =
+    {:ok, _} =
       AMQP.Basic.consume(channel, opts[:queue], nil,
         consumer_tag: opts[:consumer_tag],
         no_ack: true

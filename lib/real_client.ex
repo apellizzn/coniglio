@@ -51,8 +51,8 @@ defmodule Coniglio.RabbitClient.RealClient do
     {:reply, client, client}
   end
 
-  def handle_call({:register_consumer, queue}, {from, _ref}, client) do
-    case AMQP.Basic.consume(client.channel, queue, from) do
+  def handle_call({:register_consumer, queue, opts}, {from, _ref}, client) do
+    case AMQP.Basic.consume(client.channel, queue, from, opts) do
       {:ok, consumer_tag} ->
         {
           :reply,

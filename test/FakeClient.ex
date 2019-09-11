@@ -15,7 +15,7 @@ defmodule FakeClient do
     {:reply, client, client}
   end
 
-  def handle_call({:register_consumer, _queue}, _from, client) do
+  def handle_call({:register_consumer, _queue, _opts}, _from, client) do
     {:reply, {:ok, "consumer-tag"},
      %FakeClient{client | consumers: ["consumer-tag" | client.consumers]}}
   end

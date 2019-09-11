@@ -34,8 +34,8 @@ defmodule Coniglio.RabbitClient.Client do
         GenServer.cast(__MODULE__, :stop)
       end
 
-      def register_consumer(queue) do
-        GenServer.call(__MODULE__, {:register_consumer, queue})
+      def register_consumer(queue, opts \\ []) do
+        GenServer.call(__MODULE__, {:register_consumer, queue, opts})
       end
 
       defoverridable init: 1
