@@ -15,12 +15,13 @@ defmodule Coniglio.RabbitClient.DirectReceiver do
   def init(opts) do
     channel = opts[:channel]
     receiver = opts[:receiver]
+    consumer_tag = opts[:consumer_tag]
 
     case AMQP.Basic.consume(channel, opts[:queue], self(),
-           consumer_tag: opts[:consumer_tag],
+           consumer_tag: consumer_tag,
            no_ack: true
          ) do
-      {:ok, _} -> {:ok, {channel, receiver}}
+      {:ok, _} -> {:ok, {channel, receiver, consumer_tag}}
       _ -> {:stop, "error"}
     end
   end
@@ -37,15 +38,22 @@ defmodule Coniglio.RabbitClient.DirectReceiver do
     {:stop, :normal, state}
   end
 
+  def handle_info({:basic_cancel_ok, %{consumer_tag: consumer_tag}}, state) do
+    Logger.info("Consumer #{consumer_tag} cancelled")
+    {:noreply, state}
+  end
+
   def handle_info(
         {:basic_deliver, payload, meta},
-        {channel, receiver}
+        {channel, receiver, consumer_tag}
       ) do
+    AMQP.Basic.cancel(channel, consumer_tag)
+
     GenServer.reply(
       receiver,
       RabbitClient.Delivery.from_amqp_delivery(meta, payload)
     )
 
-    {:noreply, {channel, receiver}}
+    {:noreply, {channel, receiver, consumer_tag}}
   end
 end

@@ -70,7 +70,6 @@ defmodule Coniglio.RabbitClient.RealClient do
 
   def handle_call({:request, ctx, request}, from, client) do
     consumer_id = UUID.uuid1()
-    IO.puts(consumer_id)
 
     {:ok, _pid} =
       Coniglio.RabbitClient.DirectReceiver.start_link(
@@ -104,7 +103,7 @@ defmodule Coniglio.RabbitClient.RealClient do
     )
   end
 
-  def handle_info(:stop, client) do
+  def handle_cast(:stop, client) do
     Logger.info("Stopping RabbitMQ client...")
 
     case AMQP.Connection.close(client.connection) do

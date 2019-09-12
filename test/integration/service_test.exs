@@ -45,7 +45,7 @@ defmodule Coniglio.ServiceIntegrationTest do
 
   describe "request" do
     test "returns the delivery" do
-      delivery1 =
+      delivery =
         Coniglio.RabbitClient.RealClient.request(
           %Coniglio.Context{correlation_id: '123'},
           %Coniglio.RabbitClient.Delivery{
@@ -56,7 +56,11 @@ defmodule Coniglio.ServiceIntegrationTest do
           }
         )
 
-      delivery2 =
+      assert Message.new(name: "Albe", last_name: "Pell") ==
+               delivery.body
+               |> Message.decode()
+
+      delivery =
         Coniglio.RabbitClient.RealClient.request(
           %Coniglio.Context{correlation_id: '123'},
           %Coniglio.RabbitClient.Delivery{
@@ -67,9 +71,11 @@ defmodule Coniglio.ServiceIntegrationTest do
           }
         )
 
-      assert Message.new(name: "Albe", last_name: "Pell") ==
-               delivery2.body
+      assert Message.new(name: "Albe", age: 42) ==
+               delivery.body
                |> Message.decode()
+
+      Coniglio.RabbitClient.RealClient.stop()
     end
   end
 end
