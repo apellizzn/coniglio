@@ -12,8 +12,8 @@ defmodule Coniglio.RabbitClient.RealClient do
 
     with {:ok, conn} <-
            AMQP.Connection.open(
-             [connection_timeout: opts[:timeout]],
-             @broker_url
+             @broker_url,
+             connection_timeout: opts[:timeout]
            ),
          {:ok, chan} <- AMQP.Channel.open(conn) do
       Logger.info("Connection successful")
@@ -28,9 +28,9 @@ defmodule Coniglio.RabbitClient.RealClient do
         }
       }
     else
-      {:error, err} ->
-        Logger.error(err)
-        {:stop, err}
+      {:error, {{reason, _}, _}} ->
+        Logger.error(reason)
+        {:stop, reason}
 
       err ->
         Logger.error(err)

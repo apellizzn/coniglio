@@ -36,7 +36,6 @@ defmodule Coniglio.ServiceIntegrationTest do
   setup_all do
     Coniglio.Service.start_link(
       listeners: [AddLastName, AddAge],
-      broker_url: @broker_url,
       timeout: 1000
     )
 
