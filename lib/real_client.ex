@@ -43,7 +43,7 @@ defmodule Coniglio.RabbitClient.RealClient do
          :ok <- AMQP.Queue.bind(client.channel, queue, exchange, routing_key: topic) do
       {:reply, queue, client}
     else
-      _ -> {:error, "Could not create the queue #{queue}"}
+      _ -> {:stop, "Could not create the queue #{queue}"}
     end
   end
 
@@ -70,6 +70,7 @@ defmodule Coniglio.RabbitClient.RealClient do
 
   def handle_call({:request, ctx, request}, from, client) do
     consumer_id = UUID.uuid1()
+    IO.puts(consumer_id)
 
     {:ok, _pid} =
       Coniglio.RabbitClient.DirectReceiver.start_link(

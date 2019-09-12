@@ -9,20 +9,20 @@ defmodule Coniglio.RabbitClient.DirectReceiver do
   require Logger
 
   def start_link(opts) do
-    GenServer.start_link(__MODULE__, opts, [])
+    GenServer.start_link(__MODULE__, opts, name: String.to_atom(opts[:consumer_tag]))
   end
 
   def init(opts) do
     channel = opts[:channel]
     receiver = opts[:receiver]
 
-    {:ok, _} =
-      AMQP.Basic.consume(channel, opts[:queue], nil,
-        consumer_tag: opts[:consumer_tag],
-        no_ack: true
-      )
-
-    {:ok, {channel, receiver}}
+    case AMQP.Basic.consume(channel, opts[:queue], self(),
+           consumer_tag: opts[:consumer_tag],
+           no_ack: true
+         ) do
+      {:ok, _} -> {:ok, {channel, receiver}}
+      _ -> {:stop, "error"}
+    end
   end
 
   # Confirmation sent by the broker after registering this process as a consumer
@@ -41,9 +41,10 @@ defmodule Coniglio.RabbitClient.DirectReceiver do
         {:basic_deliver, payload, meta},
         {channel, receiver}
       ) do
-    delivery = RabbitClient.Delivery.from_amqp_delivery(meta, payload)
-
-    GenServer.reply(receiver, delivery)
+    GenServer.reply(
+      receiver,
+      RabbitClient.Delivery.from_amqp_delivery(meta, payload)
+    )
 
     {:noreply, {channel, receiver}}
   end

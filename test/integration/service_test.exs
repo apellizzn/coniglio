@@ -45,7 +45,7 @@ defmodule Coniglio.ServiceIntegrationTest do
 
   describe "request" do
     test "returns the delivery" do
-      delivery =
+      delivery1 =
         Coniglio.RabbitClient.RealClient.request(
           %Coniglio.Context{correlation_id: '123'},
           %Coniglio.RabbitClient.Delivery{
@@ -56,8 +56,19 @@ defmodule Coniglio.ServiceIntegrationTest do
           }
         )
 
+      delivery2 =
+        Coniglio.RabbitClient.RealClient.request(
+          %Coniglio.Context{correlation_id: '123'},
+          %Coniglio.RabbitClient.Delivery{
+            exchange: "add-age-exchange",
+            routing_key: "add-age-topic",
+            body: Message.encode(Message.new(name: "Albe")),
+            headers: []
+          }
+        )
+
       assert Message.new(name: "Albe", last_name: "Pell") ==
-               delivery.body
+               delivery2.body
                |> Message.decode()
     end
   end
