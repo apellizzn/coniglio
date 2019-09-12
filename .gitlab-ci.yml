@@ -1,0 +1,16 @@
+image: elixir:1.9.0
+services:
+  - rabbitmq:latest
+
+variables:
+  RABBITMQ_DEFAULT_USER: guest
+  RABBITMQ_DEFAULT_PASS: guest
+  AMQP_URL: "amqp://guest:guest@rabbitmq:5672"
+  MIX_ENV: "test"
+
+before_script:
+  - mix deps.get
+
+mix:
+  script:
+    - mix test

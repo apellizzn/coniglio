@@ -1,10 +1,11 @@
 defmodule FakeClient do
+  @broker_url Application.get_env(:coniglio, :broker_url)
   use Coniglio.RabbitClient.Client
 
   defstruct [:broker_url, :connection, :channel, :timeout, consumers: []]
 
   def init(opts) do
-    {:ok, %FakeClient{broker_url: opts[:broker_url], timeout: opts[:timeout]}}
+    {:ok, %FakeClient{broker_url: @broker_url, timeout: opts[:timeout]}}
   end
 
   def handle_call({:bind_exchange, prefix, exchange, topic}, _from, client) do

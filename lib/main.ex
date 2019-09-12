@@ -5,7 +5,6 @@ defmodule Main do
   def try do
     Coniglio.Service.start_link(
       listeners: [SayHi],
-      broker_url: "amqp://localhost:5672",
       timeout: 1000
     )
 

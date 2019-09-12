@@ -2,6 +2,7 @@ defmodule Coniglio.RabbitClient.RealClient do
   use Coniglio.RabbitClient.Client
   require Logger
 
+  @broker_url Application.get_env(:coniglio, :broker_url)
   @direct_reply_to "amq.rabbitmq.reply-to"
 
   defstruct [:broker_url, :connection, :channel, :timeout, consumers: []]
@@ -10,14 +11,17 @@ defmodule Coniglio.RabbitClient.RealClient do
     Logger.info("Connecting to broker...")
 
     with {:ok, conn} <-
-           AMQP.Connection.open([connection_timeout: opts[:timeout]], opts[:broker_url]),
+           AMQP.Connection.open(
+             [connection_timeout: opts[:timeout]],
+             @broker_url
+           ),
          {:ok, chan} <- AMQP.Channel.open(conn) do
       Logger.info("Connection successful")
 
       {
         :ok,
         %Coniglio.RabbitClient.RealClient{
-          broker_url: opts[:broker_url],
+          broker_url: @broker_url,
           timeout: opts[:timeout],
           connection: conn,
           channel: chan

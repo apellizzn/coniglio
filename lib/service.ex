@@ -9,7 +9,7 @@ defmodule Coniglio.Service do
   def init(opts) do
     Supervisor.init(
       [
-        {@client, [broker_url: opts[:broker_url], timeout: opts[:timeout]]}
+        {@client, [timeout: opts[:timeout]]}
         | Enum.map(opts[:listeners], fn listener ->
             %{
               id: listener,
