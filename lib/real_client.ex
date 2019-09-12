@@ -8,7 +8,7 @@ defmodule Coniglio.RabbitClient.RealClient do
   defstruct [:broker_url, :connection, :channel, :timeout, consumers: []]
 
   def init(opts) do
-    Logger.info("Connecting to broker...")
+    Logger.info("Connecting to broker...#{@broker_url}")
 
     with {:ok, conn} <-
            AMQP.Connection.open(
@@ -32,9 +32,9 @@ defmodule Coniglio.RabbitClient.RealClient do
         Logger.error(reason)
         {:stop, reason}
 
-      err ->
-        Logger.error(err)
-        {:stop, err}
+      {:error, reason} ->
+        Logger.error(reason)
+        {:stop, reason}
     end
   end
 
