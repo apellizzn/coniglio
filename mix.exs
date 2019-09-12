@@ -30,7 +30,7 @@ defmodule Coniglio.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:amqp, "~> 1.3"},
+      {:amqp, "~> 1.3.1"},
       {:protobuf, "~> 0.5.3"},
       {:uuid, "~> 1.1"},
       {:credo, "~> 1.1.0", only: [:dev, :test], runtime: false}
