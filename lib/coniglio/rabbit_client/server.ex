@@ -1,5 +1,4 @@
 defmodule Server do
-  @behaviour Coniglio.Listener
   @client Application.get_env(:coniglio, :client)
 
   use GenServer
@@ -34,10 +33,7 @@ defmodule Server do
     {:stop, :normal, state}
   end
 
-  def handle_info(
-        {:basic_deliver, payload, meta},
-        listener
-      ) do
+  def handle_info({:basic_deliver, payload, meta}, listener) do
     client = @client.get()
 
     try do
