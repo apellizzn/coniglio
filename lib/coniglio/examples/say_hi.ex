@@ -1,6 +1,5 @@
 defmodule SayHi do
-  require Logger
-  @behaviour Coniglio.Listener
+  use Coniglio.Listener
 
   def exchange do
     "say_hi_exchange"
@@ -11,7 +10,6 @@ defmodule SayHi do
   end
 
   def handle(delivery) do
-    Logger.info("#{__MODULE__} Received a message")
     %Message{name: name} = Message.decode(delivery.body)
     Logger.info("Hi #{name}!")
     delivery.body

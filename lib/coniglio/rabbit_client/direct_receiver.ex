@@ -1,6 +1,9 @@
 defmodule Coniglio.RabbitClient.DirectReceiver do
   @moduledoc """
     Coniglio.RabbitClient.DirectReceiver
+
+    This module is responsible of collecting messages on the direct reply to
+    queue and forwording them to the waiting process
   """
 
   use GenServer
@@ -12,6 +15,12 @@ defmodule Coniglio.RabbitClient.DirectReceiver do
     GenServer.start_link(__MODULE__, opts, name: String.to_atom(opts[:consumer_tag]))
   end
 
+  @spec init([
+          {:channel, AMQP.Channel.t()},
+          {:receiver, pid()},
+          {:ctx, Coniglio.Context.t()},
+          {:consumer_tag, String.t()}
+        ]) :: {:ok, {AMQP.Channel.t(), pid(), String.t()}} | {:stop, :error}
   def init(opts) do
     channel = opts[:channel]
     receiver = opts[:receiver]
@@ -22,7 +31,7 @@ defmodule Coniglio.RabbitClient.DirectReceiver do
            no_ack: true
          ) do
       {:ok, _} -> {:ok, {channel, receiver, consumer_tag}}
-      _ -> {:stop, "error"}
+      _ -> {:stop, :error}
     end
   end
 
@@ -51,7 +60,7 @@ defmodule Coniglio.RabbitClient.DirectReceiver do
 
     GenServer.reply(
       receiver,
-      RabbitClient.Delivery.from_amqp_delivery(meta, payload)
+      Delivery.from_amqp_delivery(meta, payload)
     )
 
     {:noreply, {channel, receiver, consumer_tag}}

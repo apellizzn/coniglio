@@ -1,4 +1,9 @@
 defmodule Coniglio.Service do
+  @moduledoc """
+    Coniglio.Service
+
+    This module is used to register a service and a list of listeners
+  """
   @client Application.get_env(:coniglio, :client)
   use Supervisor
 
@@ -6,17 +11,13 @@ defmodule Coniglio.Service do
     Supervisor.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  def init(opts) do
+  @spec init([
+          {:listeners, [Coniglio.Listener.t()]},
+          {:timeout, Integer.t()}
+        ]) :: {:ok, any}
+  def init(listeners: listeners, timeout: timeout) do
     Supervisor.init(
-      [
-        {@client, [timeout: opts[:timeout]]}
-        | Enum.map(opts[:listeners], fn listener ->
-            %{
-              id: listener,
-              start: {Server, :start_link, [listener]}
-            }
-          end)
-      ],
+      [{@client, timeout: timeout} | listeners],
       strategy: :one_for_one
     )
   end

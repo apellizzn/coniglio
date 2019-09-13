@@ -1,5 +1,6 @@
 defmodule Coniglio.RabbitClient.RealClient do
   use Coniglio.RabbitClient.Client
+  use Coniglio
   require Logger
 
   @broker_url Application.get_env(:coniglio, :broker_url)
@@ -8,7 +9,7 @@ defmodule Coniglio.RabbitClient.RealClient do
   defstruct [:broker_url, :connection, :channel, :timeout, consumers: []]
 
   def init(opts) do
-    Logger.info("Connecting to broker...#{@broker_url}")
+    Logger.info("Connecting to broker...")
 
     with {:ok, conn} <-
            AMQP.Connection.open(
@@ -20,7 +21,7 @@ defmodule Coniglio.RabbitClient.RealClient do
 
       {
         :ok,
-        %Coniglio.RabbitClient.RealClient{
+        %RabbitClient.RealClient{
           broker_url: @broker_url,
           timeout: opts[:timeout],
           connection: conn,
@@ -61,7 +62,7 @@ defmodule Coniglio.RabbitClient.RealClient do
         {
           :reply,
           {:ok, consumer_tag},
-          %Coniglio.RabbitClient.RealClient{
+          %RabbitClient.RealClient{
             client
             | consumers: [consumer_tag | client.consumers]
           }
@@ -73,38 +74,44 @@ defmodule Coniglio.RabbitClient.RealClient do
   end
 
   def handle_call({:request, ctx, request}, from, client) do
-    consumer_id = UUID.uuid1()
-
-    {:ok, _pid} =
-      Coniglio.RabbitClient.DirectReceiver.start_link(
-        channel: client.channel,
-        receiver: from,
-        queue: @direct_reply_to,
-        ctx: ctx,
-        consumer_tag: consumer_id
-      )
-
-    do_publish(
-      client,
-      request.exchange,
-      request.routing_key,
-      ctx.correlation_id,
-      request.headers,
-      request.body,
-      @direct_reply_to
-    )
+    with {:ok, _pid} <-
+           RabbitClient.DirectReceiver.start_link(
+             channel: client.channel,
+             receiver: from,
+             queue: @direct_reply_to,
+             ctx: ctx,
+             consumer_tag: UUID.uuid1()
+           ),
+         {:ok, client} <-
+           do_publish(
+             client,
+             request.exchange,
+             request.routing_key,
+             ctx.correlation_id,
+             request.headers,
+             request.body,
+             @direct_reply_to
+           ) do
+      {:noreply, client}
+    else
+      {:error, reason} ->
+        {:stop, reason}
+    end
   end
 
   def handle_cast({:publish, ctx, request}, client) do
-    do_publish(
-      client,
-      request.exchange,
-      request.routing_key,
-      ctx.correlation_id,
-      request.headers,
-      request.body,
-      nil
-    )
+    case do_publish(
+           client,
+           request.exchange,
+           request.routing_key,
+           ctx.correlation_id,
+           request.headers,
+           request.body,
+           nil
+         ) do
+      {:ok, client} -> {:noreply, client}
+      {:error, reason} -> {:stop, reason}
+    end
   end
 
   def handle_cast(:stop, client) do
@@ -122,16 +129,16 @@ defmodule Coniglio.RabbitClient.RealClient do
   end
 
   @spec do_publish(
-          Coniglio.RabbitClient.RealClient.t(),
+          RabbitClient.RealClient.t(),
           String.t(),
           String.t(),
           String.t(),
           any,
           String.t(),
           String.t() | nil
-        ) :: :ok | :error
+        ) :: {:ok, RabbitClient.RealClient.t()} | {:error, :blocked | :closing}
 
-  defp do_publish(client, exchange, routing_key, correlation_id, headers, body, reply_to) do
+  defp do_publish(client, exchange, routing_key, _correlation_id, headers, body, reply_to) do
     Logger.info("Publish message to #{exchange}#{routing_key}")
 
     case AMQP.Basic.publish(client.channel, exchange, routing_key, body,
@@ -142,18 +149,10 @@ defmodule Coniglio.RabbitClient.RealClient do
            content_type: "application/vnd.google.protobuf"
          ) do
       :ok ->
-        {:noreply, client}
+        {:ok, client}
 
       {:error, reason} ->
-        Logger.error(%{
-          error: reason,
-          exchange: exchange,
-          key: routing_key,
-          body: body,
-          correlation_id: correlation_id
-        })
-
-        {:stop, reason}
+        {:error, reason}
     end
   end
 end

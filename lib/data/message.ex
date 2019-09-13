@@ -7,7 +7,7 @@ defmodule Message do
   @type t :: %__MODULE__{
           name: String.t(),
           last_name: String.t(),
-          age: Integer.t() | nil
+          age: Integer.t()
         }
   defstruct [:name, :last_name, :age]
 

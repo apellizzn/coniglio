@@ -6,7 +6,7 @@ defmodule Coniglio do
     quote do
       alias Coniglio.Context
       alias Coniglio.RabbitClient
-      alias Coniglio.RabbitClient.Delivery
+      alias Coniglio.Delivery
       alias Coniglio.Service
     end
   end

@@ -1,8 +1,10 @@
 defmodule Coniglio.ServiceIntegrationTest do
   use ExUnit.Case, async: true
+  use Coniglio
 
   defmodule AddLastName do
-    @behaviour Coniglio.Listener
+    use Coniglio.Listener
+
     def handle(delivery) do
       %Message{Message.decode(delivery.body) | last_name: "Pell"}
       |> Message.encode()
@@ -18,7 +20,8 @@ defmodule Coniglio.ServiceIntegrationTest do
   end
 
   defmodule AddAge do
-    @behaviour Coniglio.Listener
+    use Coniglio.Listener
+
     def handle(delivery) do
       %Message{Message.decode(delivery.body) | age: 42}
       |> Message.encode()
@@ -34,20 +37,16 @@ defmodule Coniglio.ServiceIntegrationTest do
   end
 
   setup_all do
-    Coniglio.Service.start_link(
-      listeners: [AddLastName, AddAge],
-      timeout: 1000
-    )
-
+    Coniglio.Service.start_link(listeners: [AddLastName, AddAge], timeout: 1000)
     :ok
   end
 
   describe "request" do
     test "returns the delivery" do
       delivery =
-        Coniglio.RabbitClient.RealClient.request(
+        RabbitClient.RealClient.request(
           %Coniglio.Context{correlation_id: '123'},
-          %Coniglio.RabbitClient.Delivery{
+          %Coniglio.Delivery{
             exchange: "add-last-name-exchange",
             routing_key: "add-last-name-topic",
             body: Message.encode(Message.new(name: "Albe")),
@@ -60,9 +59,9 @@ defmodule Coniglio.ServiceIntegrationTest do
                |> Message.decode()
 
       delivery =
-        Coniglio.RabbitClient.RealClient.request(
+        RabbitClient.RealClient.request(
           %Coniglio.Context{correlation_id: '123'},
-          %Coniglio.RabbitClient.Delivery{
+          %Coniglio.Delivery{
             exchange: "add-age-exchange",
             routing_key: "add-age-topic",
             body: Message.encode(Message.new(name: "Albe")),
@@ -74,7 +73,7 @@ defmodule Coniglio.ServiceIntegrationTest do
                delivery.body
                |> Message.decode()
 
-      Coniglio.RabbitClient.RealClient.stop()
+      RabbitClient.RealClient.stop()
     end
   end
 end
