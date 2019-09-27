@@ -33,9 +33,8 @@ defmodule Coniglio.MixProject do
   defp deps do
     [
       {:amqp, "~> 1.3.1"},
-      {:protobuf, "~> 0.5.3"},
+      {:protobuf, "~> 0.6"},
       {:uuid, "~> 1.1"},
-      {:consul, "~> 0.1.6", hex: :consul_client},
       {:credo, "~> 1.1.0", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.0.0-rc.6", only: [:dev], runtime: false},
       {:ex_doc, "~> 0.21", only: :dev, runtime: false}
