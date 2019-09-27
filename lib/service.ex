@@ -13,11 +13,12 @@ defmodule Coniglio.Service do
 
   @spec init([
           {:listeners, [Coniglio.Listener.t()]},
-          {:timeout, Integer.t()}
+          {:timeout, Integer.t()},
+          {:broker_url, String.t()}
         ]) :: {:ok, any}
-  def init(listeners: listeners, timeout: timeout) do
+  def init(listeners: listeners, timeout: timeout, broker_url: broker_url) do
     Supervisor.init(
-      [{@client, timeout: timeout} | listeners],
+      [{@client, [timeout: timeout, broker_url: broker_url]} | listeners],
       strategy: :one_for_one
     )
   end
