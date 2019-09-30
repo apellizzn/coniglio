@@ -1,8 +1,6 @@
 defmodule Coniglio.Listener do
   defmacro __using__(_opts) do
     quote do
-      @client Application.get_env(:coniglio, :client)
-      use Coniglio
       use GenServer
       require Logger
 
@@ -15,9 +13,9 @@ defmodule Coniglio.Listener do
       end
 
       def init(_opts) do
-        queue = @client.bind_exchange("", exchange(), topic())
+        queue = Coniglio.Client.bind_exchange("", exchange(), topic())
 
-        case @client.register_consumer(queue) do
+        case Coniglio.Client.register_consumer(queue) do
           {:ok, _} ->
             {:ok, nil}
 
@@ -37,7 +35,7 @@ defmodule Coniglio.Listener do
       end
 
       def handle_info({:basic_deliver, payload, meta}, nil) do
-        client = @client.get()
+        client = Coniglio.Client.get()
 
         try do
           AMQP.Basic.ack(client.channel, meta.delivery_tag)
@@ -64,7 +62,7 @@ defmodule Coniglio.Listener do
       def reply(ctx, result) do
         Logger.info("Publish response to #{ctx.reply_to}")
 
-        @client.publish(
+        Coniglio.Client.publish(
           %Coniglio.Context{ctx | reply_to: nil},
           Coniglio.Delivery.from_response("", ctx.reply_to, %{
             payload: result,

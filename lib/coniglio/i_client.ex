@@ -1,4 +1,4 @@
-defmodule Coniglio.RabbitClient.Client do
+defmodule Coniglio.IClient do
   @moduledoc """
     Coniglio.RabbitClient.Client
 
@@ -36,7 +36,7 @@ defmodule Coniglio.RabbitClient.Client do
         Request / Response action, publish a message to an exchange + topic and
         wait for the response
       """
-      @spec publish(Coniglio.Context.t(), Coniglio.Delivery.t()) :: term
+      @spec request(Coniglio.Context.t(), Coniglio.Delivery.t()) :: term
       def request(ctx, request) do
         GenServer.call(__MODULE__, {:request, ctx, request})
       end

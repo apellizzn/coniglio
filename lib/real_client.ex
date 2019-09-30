@@ -1,6 +1,5 @@
-defmodule Coniglio.RabbitClient.RealClient do
-  use Coniglio.RabbitClient.Client
-  use Coniglio
+defmodule Coniglio.RealClient do
+  use Coniglio.IClient
   require Logger
 
   @direct_reply_to "amq.rabbitmq.reply-to"
@@ -20,7 +19,7 @@ defmodule Coniglio.RabbitClient.RealClient do
 
       {
         :ok,
-        %RabbitClient.RealClient{
+        %Coniglio.RealClient{
           broker_url: opts[:broker_url],
           timeout: opts[:timeout],
           connection: conn,
@@ -61,7 +60,7 @@ defmodule Coniglio.RabbitClient.RealClient do
         {
           :reply,
           {:ok, consumer_tag},
-          %RabbitClient.RealClient{
+          %Coniglio.RealClient{
             client
             | consumers: [consumer_tag | client.consumers]
           }
@@ -74,7 +73,7 @@ defmodule Coniglio.RabbitClient.RealClient do
 
   def handle_call({:request, ctx, request}, from, client) do
     with {:ok, _pid} <-
-           RabbitClient.DirectReceiver.start_link(
+           Coniglio.DirectReceiver.start_link(
              channel: client.channel,
              receiver: from,
              queue: @direct_reply_to,
@@ -128,7 +127,7 @@ defmodule Coniglio.RabbitClient.RealClient do
   end
 
   @spec do_publish(
-          RabbitClient.RealClient.t(),
+          Coniglio.RealClient.t(),
           String.t(),
           String.t(),
           String.t(),

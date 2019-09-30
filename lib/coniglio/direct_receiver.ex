@@ -1,4 +1,4 @@
-defmodule Coniglio.RabbitClient.DirectReceiver do
+defmodule Coniglio.DirectReceiver do
   @moduledoc """
     Coniglio.RabbitClient.DirectReceiver
 
@@ -8,7 +8,6 @@ defmodule Coniglio.RabbitClient.DirectReceiver do
 
   use GenServer
   use AMQP
-  use Coniglio
   require Logger
 
   def start_link(opts) do
@@ -60,7 +59,7 @@ defmodule Coniglio.RabbitClient.DirectReceiver do
 
     GenServer.reply(
       receiver,
-      Delivery.from_amqp_delivery(meta, payload)
+      Coniglio.Delivery.from_amqp_delivery(meta, payload)
     )
 
     {:noreply, {channel, receiver, consumer_tag}}

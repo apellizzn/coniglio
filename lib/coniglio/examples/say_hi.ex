@@ -2,11 +2,11 @@ defmodule SayHi do
   use Coniglio.Listener
 
   def exchange do
-    "say_hi_exchange"
+    "salutation"
   end
 
   def topic do
-    "say_hi_topic"
+    "simple"
   end
 
   def handle(delivery) do

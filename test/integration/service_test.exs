@@ -1,6 +1,5 @@
 defmodule Coniglio.ServiceIntegrationTest do
   use ExUnit.Case, async: true
-  use Coniglio
 
   defmodule AddLastName do
     use Coniglio.Listener
@@ -37,7 +36,7 @@ defmodule Coniglio.ServiceIntegrationTest do
   end
 
   setup_all do
-    Coniglio.Service.start_link(
+    Coniglio.start_link(
       listeners: [AddLastName, AddAge],
       timeout: 1000,
       broker_url: "amqp://localhost:5672"
@@ -49,7 +48,7 @@ defmodule Coniglio.ServiceIntegrationTest do
   describe "request" do
     test "returns the delivery" do
       delivery =
-        RabbitClient.RealClient.request(
+        Coniglio.Client.request(
           %Coniglio.Context{correlation_id: '123'},
           %Coniglio.Delivery{
             exchange: "add-last-name-exchange",
@@ -64,7 +63,7 @@ defmodule Coniglio.ServiceIntegrationTest do
                |> Message.decode()
 
       delivery =
-        RabbitClient.RealClient.request(
+        Coniglio.Client.request(
           %Coniglio.Context{correlation_id: '123'},
           %Coniglio.Delivery{
             exchange: "add-age-exchange",
@@ -78,7 +77,7 @@ defmodule Coniglio.ServiceIntegrationTest do
                delivery.body
                |> Message.decode()
 
-      RabbitClient.RealClient.stop()
+      Coniglio.Client.stop()
     end
   end
 end

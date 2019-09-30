@@ -1,5 +1,5 @@
 defmodule FakeClient do
-  use Coniglio.RabbitClient.Client
+  use Coniglio.IClient
 
   defstruct [:broker_url, :connection, :channel, :timeout, consumers: []]
 
