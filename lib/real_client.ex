@@ -78,7 +78,7 @@ defmodule Coniglio.RealClient do
              receiver: from,
              queue: @direct_reply_to,
              ctx: ctx,
-             consumer_tag: UUID.uuid1()
+             consumer_tag: UUID.uuid4()
            ),
          {:ok, client} <-
            do_publish(
