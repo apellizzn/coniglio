@@ -2,6 +2,10 @@ defmodule Coniglio.Client do
   @client Application.get_env(:coniglio, :client, Coniglio.RealClient)
   use GenServer
 
+  def init(init_arg) do
+    {:ok, init_arg}
+  end
+
   def start_link(opts) do
     @client.start_link(opts)
   end

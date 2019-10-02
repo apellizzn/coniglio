@@ -2,37 +2,51 @@ defmodule Coniglio.RealClient do
   use Coniglio.IClient
   require Logger
 
+  @wait_time 1000
   @direct_reply_to "amq.rabbitmq.reply-to"
 
   defstruct [:broker_url, :connection, :channel, :timeout, consumers: []]
 
+  defp connect(broker_url, timeout, last_error \\ nil, wait \\ @wait_time)
+
+  defp connect(_, _, last_error, 16_000), do: {:error, last_error}
+
+  defp connect(broker_url, timeout, last_error, wait) do
+    :timer.sleep(wait)
+
+    with {:ok, conn} <-
+           AMQP.Connection.open(broker_url, connection_timeout: wait),
+         {:ok, chan} <- AMQP.Channel.open(conn) do
+      {:ok,
+       %Coniglio.RealClient{
+         broker_url: broker_url,
+         timeout: timeout,
+         connection: conn,
+         channel: chan
+       }}
+    else
+      {:error, {{reason, _}, _}} ->
+        retry_in(wait * 2, broker_url, timeout, reason)
+
+      {:error, reason} ->
+        retry_in(wait * 2, broker_url, timeout, reason)
+    end
+  end
+
+  defp retry_in(wait, broker_url, timeout, reason) do
+    Logger.info("Retry connection in #{wait / 1000} seconds")
+    connect(broker_url, timeout, reason, wait)
+  end
+
   def init(opts) do
     Logger.info("Connecting to broker...")
 
-    with {:ok, conn} <-
-           AMQP.Connection.open(
-             opts[:broker_url],
-             connection_timeout: opts[:timeout]
-           ),
-         {:ok, chan} <- AMQP.Channel.open(conn) do
-      Logger.info("Connection successful")
-
-      {
-        :ok,
-        %Coniglio.RealClient{
-          broker_url: opts[:broker_url],
-          timeout: opts[:timeout],
-          connection: conn,
-          channel: chan
-        }
-      }
-    else
-      {:error, {{reason, _}, _}} ->
-        Logger.error(reason)
-        {:stop, reason}
+    case connect(opts[:broker_url], opts[:timeout]) do
+      {:ok, client} ->
+        {:ok, client}
 
       {:error, reason} ->
-        Logger.error(reason)
+        Logger.error("Could not open connection")
         {:stop, reason}
     end
   end
