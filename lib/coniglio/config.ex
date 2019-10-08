@@ -6,7 +6,7 @@ defmodule Coniglio.Config do
   """
   use Agent
   alias Consul.HTTP.Raw, as: Consul
-  @consul_key System.get_env("CONSUL_KEY")
+  @consul_key System.get_env("CONSUL_KEY", "")
   def start_link() do
     with %{body: body, status_code: 200} <- Consul.kv_get(@consul_key) do
       Agent.start_link(fn -> consul_config(body) end, name: __MODULE__)
