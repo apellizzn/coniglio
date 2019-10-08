@@ -39,7 +39,7 @@ defmodule Coniglio.ServiceIntegrationTest do
     Coniglio.start_link(
       listeners: [AddLastName, AddAge],
       timeout: 1000,
-      broker_url: "amqp://localhost:5672"
+      broker_url: System.get_env("AMQP_URL")
     )
 
     :ok
