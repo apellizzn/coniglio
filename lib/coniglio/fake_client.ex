@@ -1,10 +1,10 @@
-defmodule FakeClient do
+defmodule Coniglio.FakeClient do
   use Coniglio.IClient
 
   defstruct [:broker_url, :connection, :channel, :timeout, consumers: []]
 
-  def init(opts) do
-    {:ok, %FakeClient{broker_url: opts[:broker_url], timeout: opts[:timeout]}}
+  def start_link(opts) do
+    {:ok, %Coniglio.FakeClient{broker_url: opts[:broker_url], timeout: opts[:timeout]}}
   end
 
   def handle_call({:bind_exchange, prefix, exchange, topic}, _from, client) do
@@ -17,7 +17,7 @@ defmodule FakeClient do
 
   def handle_call({:register_consumer, _queue, _opts}, _from, client) do
     {:reply, {:ok, "consumer-tag"},
-     %FakeClient{client | consumers: ["consumer-tag" | client.consumers]}}
+     %Coniglio.FakeClient{client | consumers: ["consumer-tag" | client.consumers]}}
   end
 
   def handle_call({:request, _ctx, request}, _from, client) do
