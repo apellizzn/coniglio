@@ -36,10 +36,10 @@ defmodule Coniglio.ServiceIntegrationTest do
   end
 
   setup_all do
-    Coniglio.start_link(
+    Coniglio.Service.start_link(
       listeners: [AddLastName, AddAge],
       timeout: 1000,
-      broker_url: System.get_env("AMQP_URL")
+      broker_url: Application.get_env(:coniglio, :broker_url)
     )
 
     :ok

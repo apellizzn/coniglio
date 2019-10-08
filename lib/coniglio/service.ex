@@ -1,6 +1,6 @@
-defmodule Coniglio do
+defmodule Coniglio.Service do
   @moduledoc """
-    Coniglio
+    Coniglio.Service
 
     This module is used to register a service and a list of listeners
   """

@@ -26,7 +26,8 @@ defmodule Coniglio.MixProject do
   def application do
     [
       applications: [:consul],
-      extra_applications: [:logger, :amqp]
+      extra_applications: [:logger, :amqp],
+      mod: {Coniglio, []}
     ]
   end
 
