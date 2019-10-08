@@ -28,7 +28,6 @@ defmodule Coniglio.Config do
 
   defp from_consul(key) do
     path = String.split(key, ".")
-
     Agent.get(__MODULE__, fn config -> get_in(config, path) end)
   end
 

@@ -36,7 +36,7 @@ defmodule Coniglio.MixProject do
       {:amqp, "~> 1.3.1"},
       {:protobuf, "~> 0.6"},
       {:elixir_uuid, "~> 1.2"},
-      {:consul, git: "git@github.com:team-telnyx/consul-elixir.git"},
+      {:consul, git: "ssh://git@github.com/team-telnyx/consul-elixir.git"},
       {:credo, "~> 1.1.0", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.0.0-rc.6", only: [:dev], runtime: false},
       {:ex_doc, "~> 0.21", only: :dev, runtime: false}
