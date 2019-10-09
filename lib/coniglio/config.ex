@@ -6,9 +6,12 @@ defmodule Coniglio.Config do
   """
   use Agent
   alias Consul.HTTP.Raw, as: Consul
-  @consul_key System.get_env("CONSUL_KEY", "")
+
+  @consul_url Application.get_env(:coniglio, :consul_url)
+  @consul_key Application.get_env(:coniglio, :consul_key)
+
   def start_link(_opts) do
-    if System.get_env("CONSUL_URL") do
+    if @consul_url && @consul_key do
       with %{body: body, status_code: 200} <- Consul.kv_get(@consul_key) do
         Agent.start_link(fn -> consul_config(body) end, name: __MODULE__)
       else

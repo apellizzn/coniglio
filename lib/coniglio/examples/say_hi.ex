@@ -1,13 +1,5 @@
 defmodule SayHi do
-  use Coniglio.Listener
-
-  def exchange do
-    "salutation"
-  end
-
-  def topic do
-    "simple"
-  end
+  use Coniglio.Listener, exchange: "salutation", topic: "simple"
 
   def handle(delivery) do
     %Message{name: name} = Message.decode(delivery.body)

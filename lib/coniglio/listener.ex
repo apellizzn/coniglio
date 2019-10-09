@@ -1,14 +1,20 @@
 defmodule Coniglio.Listener do
-  defmacro __using__(_opts) do
+  defmacro __using__(exchange: exchange, topic: topic) do
     quote do
       use GenServer
       require Logger
 
-      @callback exchange() :: String.t()
-      @callback topic() :: String.t()
       @callback handle(Delivery.t()) :: byte()
 
-      def start_link(opts) do
+      def exchange do
+        unquote(exchange)
+      end
+
+      def topic do
+        unquote(topic)
+      end
+
+      def start_link(opts \\ []) do
         GenServer.start_link(__MODULE__, opts, [])
       end
 
