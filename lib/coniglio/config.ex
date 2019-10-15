@@ -7,9 +7,10 @@ defmodule Coniglio.Config do
   use Agent
   alias Consul.HTTP.Raw, as: Consul
 
-  @consul_url Application.get_env(:coniglio, :consul_url)
-  @consul_key Application.get_env(:coniglio, :consul_key)
+  @consul_url Application.get_env(:consul, :base_url)
+  @consul_key Application.get_env(:consul, :key)
 
+  @spec start_link(any) :: {:error, any} | {:ok, pid}
   def start_link(_opts) do
     if @consul_url && @consul_key do
       with %{body: body, status_code: 200} <- Consul.kv_get(@consul_key) do
